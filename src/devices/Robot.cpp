@@ -37,42 +37,44 @@ mc_rbdyn::DevicePtr Robot::clone() const
 
 void Robot::addToLogger(mc_rtc::Logger & logger, const std::string & prefix)
 {
+  // External torque, filtered
   logger.addLogEntry(prefix + "_tau_ext_hat_filtered",
-                     [this]() -> const std::array<double, 7> & { return state_.tau_ext_hat_filtered; }); //External torque, filtered
+                     [this]() -> const std::array<double, 7> & { return state_.tau_ext_hat_filtered; });
+  // Estimated external wrench (force, torque) acting on stiffness frame, expressed relative to the base frame
   logger.addLogEntry(prefix + "_O_F_ext_hat_K",
-                     [this]() -> const std::array<double, 6> & { return state_.O_F_ext_hat_K; }); //Estimated external wrench (force, torque) acting on stiffness frame, expressed relative to the base frame
+                     [this]() -> const std::array<double, 6> & { return state_.O_F_ext_hat_K; });
+  // Estimated external wrench (force, torque) acting on stiffness frame, expressed relative to the stiffness frame
   logger.addLogEntry(prefix + "_K_F_ext_hat_K",
-                     [this]() -> const std::array<double, 6> & { return state_.K_F_ext_hat_K; }); //Estimated external wrench (force, torque) acting on stiffness frame, expressed relative to the stiffness frame
+                     [this]() -> const std::array<double, 6> & { return state_.K_F_ext_hat_K; });
   logger.addLogEntry(prefix + "_control_command_success_rate",
                      [this]() { return state_.control_command_success_rate; });
   logger.addLogEntry(prefix + "_joint_contact",
                      [this]() -> const std::array<double, 7> & { return state_.joint_contact; });
   logger.addLogEntry(prefix + "_cartesian_contact",
                      [this]() -> const std::array<double, 6> & { return state_.cartesian_contact; });
-  logger.addLogEntry(prefix + "_torque_measured",
-                     [this]() -> const std::array<double, 7> & { return state_.tau_J; }); //Measured link-side joint torque sensor signals
-  logger.addLogEntry(prefix + "_torque_desired",
-                     [this]() -> const std::array<double, 7> & { return state_.tau_J_d; }); //Desired link-side joint torque sensor signals without gravity
+  // Measured link-side joint torque sensor signals
+  logger.addLogEntry(prefix + "_torque_measured", [this]() -> const std::array<double, 7> & { return state_.tau_J; });
+  // Desired link-side joint torque sensor signals without gravity
+  logger.addLogEntry(prefix + "_torque_desired", [this]() -> const std::array<double, 7> & { return state_.tau_J_d; });
+  // Derivative of measured link-side joint torque sensor signals
   logger.addLogEntry(prefix + "_torque_derivative_measured",
-                     [this]() -> const std::array<double, 7> & { return state_.dtau_J; }); //Derivative of measured link-side joint torque sensor signals
-  logger.addLogEntry(prefix + "_jointpos_measured",
-                     [this]() -> const std::array<double, 7> & { return state_.q; }); //Measured joint position
-  logger.addLogEntry(prefix + "_jointpos_desired",
-                     [this]() -> const std::array<double, 7> & { return state_.q_d; }); //Desired joint position
-  logger.addLogEntry(prefix + "_jointvel_measured",
-                     [this]() -> const std::array<double, 7> & { return state_.dq; }); //Measured joint velocity
-  logger.addLogEntry(prefix + "_jointvel_desired",
-                     [this]() -> const std::array<double, 7> & { return state_.dq_d; }); //Desired joint velocity
-  logger.addLogEntry(prefix + "_jointacc_desired",
-                     [this]() -> const std::array<double, 7> & { return state_.ddq_d; }); //Desired joint acceleration
-  logger.addLogEntry(prefix + "_motorpos",
-                     [this]() -> const std::array<double, 7> & { return state_.theta; }); //Motor position
-  logger.addLogEntry(prefix + "_motorvel",
-                     [this]() -> const std::array<double, 7> & { return state_.dtheta; }); //Motor velocity
-  logger.addLogEntry(prefix + "_m_ee",
-                     [this]() -> const double { return state_.m_ee; });
-  logger.addLogEntry(prefix + "_m_load",
-                     [this]() -> const double { return state_.m_load; });
+                     [this]() -> const std::array<double, 7> & { return state_.dtau_J; });
+  // Measured joint position
+  logger.addLogEntry(prefix + "_jointpos_measured", [this]() -> const std::array<double, 7> & { return state_.q; });
+  // Desired joint position
+  logger.addLogEntry(prefix + "_jointpos_desired", [this]() -> const std::array<double, 7> & { return state_.q_d; });
+  // Measured joint velocity
+  logger.addLogEntry(prefix + "_jointvel_measured", [this]() -> const std::array<double, 7> & { return state_.dq; });
+  // Desired joint velocity
+  logger.addLogEntry(prefix + "_jointvel_desired", [this]() -> const std::array<double, 7> & { return state_.dq_d; });
+  // Desired joint acceleration
+  logger.addLogEntry(prefix + "_jointacc_desired", [this]() -> const std::array<double, 7> & { return state_.ddq_d; });
+  // Motor position
+  logger.addLogEntry(prefix + "_motorpos", [this]() -> const std::array<double, 7> & { return state_.theta; });
+  // Motor velocity
+  logger.addLogEntry(prefix + "_motorvel", [this]() -> const std::array<double, 7> & { return state_.dtheta; });
+  logger.addLogEntry(prefix + "_m_ee", [this]() -> const double { return state_.m_ee; });
+  logger.addLogEntry(prefix + "_m_load", [this]() -> const double { return state_.m_load; });
   // FIXME Previous version logged singular values which does not match anythin in franka::RobotState
 }
 
