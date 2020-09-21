@@ -6,6 +6,7 @@
 
 #include <mc_rtc/log/Logger.h>
 
+#include <franka/model.h>
 #include <franka/robot.h>
 
 #include <condition_variable>
@@ -54,7 +55,7 @@ struct MC_PANDA_DEVICES_DLLAPI Robot : public mc_rbdyn::Device
   }
 
   /** Set the robot instance and start a command thread */
-  void connect(franka::Robot * robot);
+  void connect(franka::Robot * robot, franka::Model * model);
 
   /** Interrupt the connection to the robot */
   void disconnect();
@@ -63,6 +64,38 @@ struct MC_PANDA_DEVICES_DLLAPI Robot : public mc_rbdyn::Device
   inline void state(const franka::RobotState & s) noexcept
   {
     state_ = s;
+
+    // convert libfranka-jacobian from std::array to Eigen::Matrix, note: (force,moment)
+    jacobian_array = model_->zeroJacobian(franka::Frame::kEndEffector, state_);
+    jac = Eigen::Matrix<double, 6, 7>(jacobian_array.data());
+
+    // compute SVD and invert singular values
+    svdT.compute(jac.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV); //Note: jac equals V * SV.asDiagonal() * U.transpose()
+    rank = svdT.rank();
+    U = svdT.matrixU();
+    V = svdT.matrixV();
+    SV = svdT.singularValues();
+    for(int i = 0; i < 6; i++)
+    {
+      SVinv(i) = 1.0 / SV(i);
+    }
+
+    // recompute external wrench (force,moment) via pseudo-inverse of jacobian-trasnpose
+    torques = Eigen::Matrix<double, 7, 1>(state_.tau_ext_hat_filtered.data());
+    wrenchVector = V * SVinv.asDiagonal() * U.transpose() * torques;
+    // wrenchVector = svdT.solve(torques); //this solution maybe faster, but yields different values
+  }
+
+  /** Returns the singular values */
+  Eigen::Vector6d getSingularValues() const
+  {
+    return SV;
+  }
+
+  /** Returns the external wrench vector (moment,force) */
+  Eigen::Vector6d getExternalWrenchVector() const
+  {
+    return wrenchVector;
   }
 
   /** Returns the current state */
@@ -127,6 +160,17 @@ private:
   std::mutex robotMutex_;
   franka::Robot * robot_ = nullptr;
   franka::RobotState state_;
+  franka::Model * model_ = nullptr;
+  Eigen::JacobiSVD<Eigen::MatrixXd> svdT;
+  Eigen::Matrix<double, 7, 6> U;
+  Eigen::Matrix6d V;
+  Eigen::Vector6d SV;
+  Eigen::Vector6d SVinv;
+  double rank;
+  std::array<double, 42> jacobian_array;
+  Eigen::Matrix<double, 6, 7> jac;
+  Eigen::Matrix<double, 7, 1> torques;
+  Eigen::Vector6d wrenchVector;
 };
 
 } // namespace mc_panda

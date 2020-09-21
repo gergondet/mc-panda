@@ -75,6 +75,8 @@ void Robot::addToLogger(mc_rtc::Logger & logger, const std::string & prefix)
   logger.addLogEntry(prefix + "_motorvel", [this]() -> const std::array<double, 7> & { return state_.dtheta; });
   logger.addLogEntry(prefix + "_m_ee", [this]() -> const double { return state_.m_ee; });
   logger.addLogEntry(prefix + "_m_load", [this]() -> const double { return state_.m_load; });
+  logger.addLogEntry(prefix + "_singularValues", [this]() -> const Eigen::Vector6d & { return SV; });
+  logger.addLogEntry(prefix + "_wrenchVector", [this]() -> const Eigen::Vector6d & { return wrenchVector; });
   // FIXME Previous version logged singular values which does not match anythin in franka::RobotState
 }
 
@@ -98,9 +100,11 @@ void Robot::removeFromLogger(mc_rtc::Logger & logger, const std::string & prefix
   logger.removeLogEntry(prefix + "_motorvel");
   logger.removeLogEntry(prefix + "_m_ee");
   logger.removeLogEntry(prefix + "_m_load");
+  logger.removeLogEntry(prefix + "_singularValues");
+  logger.removeLogEntry(prefix + "_wrenchVector");
 }
 
-void Robot::connect(franka::Robot * robot)
+void Robot::connect(franka::Robot * robot, franka::Model * model)
 {
   std::unique_lock<std::mutex> lock(robotMutex_);
   if(robot_)
@@ -110,6 +114,16 @@ void Robot::connect(franka::Robot * robot)
     lock.lock();
   }
   robot_ = robot;
+  model_ = model;
+  svdT = Eigen::JacobiSVD<Eigen::MatrixXd>();
+  U = Eigen::Matrix<double, 7, 6>::Zero();
+  V = Eigen::Matrix6d::Zero();
+  SV = Eigen::Vector6d::Zero();
+  SVinv = Eigen::Vector6d::Zero();
+  jac = Eigen::Matrix<double, 6, 7>::Zero();
+  torques = Eigen::Matrix<double, 7, 1>::Zero();
+  wrenchVector = Eigen::Vector6d::Zero();
+
   commandThread_ = std::thread([this]() {
     while(robot_)
     {
