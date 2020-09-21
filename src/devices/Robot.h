@@ -70,7 +70,8 @@ struct MC_PANDA_DEVICES_DLLAPI Robot : public mc_rbdyn::Device
     jac = Eigen::Matrix<double, 6, 7>(jacobian_array.data());
 
     // compute SVD and invert singular values
-    svdT.compute(jac.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV); //Note: jac equals V * SV.asDiagonal() * U.transpose()
+    svdT.compute(jac.transpose(),
+                 Eigen::ComputeThinU | Eigen::ComputeThinV); // Note: jac equals V * SV.asDiagonal() * U.transpose()
     rank = svdT.rank();
     U = svdT.matrixU();
     V = svdT.matrixV();
