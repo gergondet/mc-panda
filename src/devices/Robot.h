@@ -66,37 +66,44 @@ struct MC_PANDA_DEVICES_DLLAPI Robot : public mc_rbdyn::Device
     state_ = s;
 
     // convert libfranka-jacobian from std::array to Eigen::Matrix, note: (force,moment)
-    jacobian_array = model_->zeroJacobian(franka::Frame::kEndEffector, state_);
-    jac = Eigen::Matrix<double, 6, 7>(jacobian_array.data());
+    jacobian_array_ = model_->zeroJacobian(franka::Frame::kEndEffector, state_);
+    jac_ = Eigen::Matrix<double, 6, 7>(jacobian_array_.data());
+    // auto *p_jacobian_array_ = &jacobian_array_[0];
+    // new (&jac_) Eigen::Map<Eigen::Matrix<double, 6, 7, Eigen::RowMajor> >(p_jacobian_array_, 6, 7);
 
     // compute SVD and invert singular values
-    svdT.compute(jac.transpose(),
-                 Eigen::ComputeThinU | Eigen::ComputeThinV); // Note: jac equals V * SV.asDiagonal() * U.transpose()
-    rank = svdT.rank();
-    U = svdT.matrixU();
-    V = svdT.matrixV();
-    SV = svdT.singularValues();
+    svdT_.compute(jac_.transpose(),
+                  Eigen::ComputeThinU | Eigen::ComputeThinV); // Note: jac_ equals V * SV.asDiagonal() * U.transpose()
+    rank_ = svdT_.rank();
+    SV_ = svdT_.singularValues();
     for(int i = 0; i < 6; i++)
     {
-      SVinv(i) = 1.0 / SV(i);
+      if(SV_(i) > 0.001)
+      {
+        SVinv_(i) = 1.0 / SV_(i);
+      }
+      else
+      {
+        SVinv_(i) = 0;
+      }
     }
 
     // recompute external wrench (force,moment) via pseudo-inverse of jacobian-trasnpose
-    torques = Eigen::Matrix<double, 7, 1>(state_.tau_ext_hat_filtered.data());
-    wrenchVector = V * SVinv.asDiagonal() * U.transpose() * torques;
-    // wrenchVector = svdT.solve(torques); //this solution maybe faster, but yields different values
+    torques_ = Eigen::Matrix<double, 7, 1>(state_.tau_ext_hat_filtered.data());
+    wrenchVector_ = svdT_.matrixV() * SVinv_.asDiagonal() * svdT_.matrixU().transpose() * torques_;
+    // wrenchVector_ = svdT_.solve(torques_); //this solution maybe faster, but yields different values
   }
 
   /** Returns the singular values */
   Eigen::Vector6d getSingularValues() const
   {
-    return SV;
+    return SV_;
   }
 
   /** Returns the external wrench vector (moment,force) */
-  Eigen::Vector6d getExternalWrenchVector() const
+  Eigen::Vector6d getExternalwrenchVector_() const
   {
-    return wrenchVector;
+    return wrenchVector_;
   }
 
   /** Returns the current state */
@@ -162,16 +169,15 @@ private:
   franka::Robot * robot_ = nullptr;
   franka::RobotState state_;
   franka::Model * model_ = nullptr;
-  Eigen::JacobiSVD<Eigen::MatrixXd> svdT;
-  Eigen::Matrix<double, 7, 6> U;
-  Eigen::Matrix6d V;
-  Eigen::Vector6d SV;
-  Eigen::Vector6d SVinv;
-  double rank;
-  std::array<double, 42> jacobian_array;
-  Eigen::Matrix<double, 6, 7> jac;
-  Eigen::Matrix<double, 7, 1> torques;
-  Eigen::Vector6d wrenchVector;
+  Eigen::JacobiSVD<Eigen::MatrixXd> svdT_;
+  Eigen::Vector6d SV_;
+  Eigen::Vector6d SVinv_;
+  double rank_;
+  std::array<double, 42> jacobian_array_;
+  Eigen::Matrix<double, 6, 7> jac_;
+  // Eigen::Map<Eigen::Matrix<double, 6, 7, Eigen::RowMajor> > jac_(NULL);
+  Eigen::Matrix<double, 7, 1> torques_;
+  Eigen::Vector6d wrenchVector_;
 };
 
 } // namespace mc_panda
