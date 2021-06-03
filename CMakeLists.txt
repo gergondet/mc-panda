@@ -9,7 +9,7 @@ project(mc_panda LANGUAGES CXX VERSION 1.0.0)
 enable_testing()
 set(CMAKE_CXX_STANDARD 11)
 
-find_package(mc_rtc 1.4.0 REQUIRED)
+find_package(mc_rtc REQUIRED)
 find_package(Franka REQUIRED)
 
 add_subdirectory(cmake)

@@ -52,10 +52,11 @@ PandaRobotModule::PandaRobotModule(bool pump, bool foot, bool hand)
   init(rbd::parsers::from_urdf_file(urdf_path, true));
 
   // additional joint panda limits, see https://frankaemika.github.io/docs/control_parameters.html#constants
-  std::map<std::string, std::vector<double>> torqueDerivativeUpper;
-  std::map<std::string, std::vector<double>> torqueDerivativeLower;
-  std::map<std::string, std::vector<double>> accelerationBoundsUpper;
-  std::map<std::string, std::vector<double>> accelerationBoundsLower;
+  using bound_t = mc_rbdyn::RobotModule::accelerationBounds_t::value_type;
+  bound_t torqueDerivativeUpper;
+  bound_t torqueDerivativeLower;
+  bound_t accelerationBoundsUpper;
+  bound_t accelerationBoundsLower;
   for(const auto & b : _bounds[0])
   {
     torqueDerivativeUpper[b.first] = std::vector<double>(b.second.size(), 1000);
@@ -101,43 +102,43 @@ PandaRobotModule::PandaRobotModule(bool pump, bool foot, bool hand)
   const double i = 0.015; // 0.01;
   const double s = 0.0075; // 0.005;
   const double d = 0.;
-  _minimalSelfCollisions = {mc_rbdyn::Collision("panda_link0*", "panda_link5*", i, s, d),
-                            mc_rbdyn::Collision("panda_link1*", "panda_link5*", i, s, d),
-                            mc_rbdyn::Collision("panda_link2*", "panda_link5*", i, s, d),
-                            mc_rbdyn::Collision("panda_link3*", "panda_link5*", i, s, d),
-                            mc_rbdyn::Collision("panda_link0*", "panda_link6*", i, s, d),
-                            mc_rbdyn::Collision("panda_link1*", "panda_link6*", i, s, d),
-                            mc_rbdyn::Collision("panda_link2*", "panda_link6*", i, s, d),
-                            mc_rbdyn::Collision("panda_link3*", "panda_link6*", i, s, d),
-                            mc_rbdyn::Collision("panda_link0*", "panda_link7*", i, s, d),
-                            mc_rbdyn::Collision("panda_link1*", "panda_link7*", i, s, d),
-                            mc_rbdyn::Collision("panda_link2*", "panda_link7*", i, s, d),
-                            mc_rbdyn::Collision("panda_link3*", "panda_link7*", i, s, d),
+  _minimalSelfCollisions = {{"panda_link0*", "panda_link5*", i, s, d},
+                            {"panda_link1*", "panda_link5*", i, s, d},
+                            {"panda_link2*", "panda_link5*", i, s, d},
+                            {"panda_link3*", "panda_link5*", i, s, d},
+                            {"panda_link0*", "panda_link6*", i, s, d},
+                            {"panda_link1*", "panda_link6*", i, s, d},
+                            {"panda_link2*", "panda_link6*", i, s, d},
+                            {"panda_link3*", "panda_link6*", i, s, d},
+                            {"panda_link0*", "panda_link7*", i, s, d},
+                            {"panda_link1*", "panda_link7*", i, s, d},
+                            {"panda_link2*", "panda_link7*", i, s, d},
+                            {"panda_link3*", "panda_link7*", i, s, d},
                             // FIXME Is this last one needed?
-                            mc_rbdyn::Collision("panda_link5*", "panda_link7*", i, s, d)};
+                            {"panda_link5*", "panda_link7*", i, s, d}};
 
   /* Additional self collisions */
   if(pump)
   {
     // FIXME No pump convex ATM
-    //_commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link0", "pump", i, s, d));
-    //_commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link1", "pump", i, s, d));
-    //_commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link2", "pump", i, s, d));
-    //_commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link3", "pump", i, s, d));
+    //_commonSelfCollisions.push_back({"panda_link0", "pump", i, s, d)};
+    //_commonSelfCollisions.push_back({"panda_link1", "pump", i, s, d)};
+    //_commonSelfCollisions.push_back({"panda_link2", "pump", i, s, d)};
+    //_commonSelfCollisions.push_back({"panda_link3", "pump", i, s, d)};
   }
   if(foot)
   {
-    _commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link0", "foot", i, s, d));
-    _commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link1", "foot", i, s, d));
-    _commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link2", "foot", i, s, d));
-    _commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link3", "foot", i, s, d));
+    _commonSelfCollisions.push_back({"panda_link0", "foot", i, s, d});
+    _commonSelfCollisions.push_back({"panda_link1", "foot", i, s, d});
+    _commonSelfCollisions.push_back({"panda_link2", "foot", i, s, d});
+    _commonSelfCollisions.push_back({"panda_link3", "foot", i, s, d});
   }
   if(hand)
   {
-    _commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link0", "hand", i, s, d));
-    _commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link1", "hand", i, s, d));
-    _commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link2", "hand", i, s, d));
-    _commonSelfCollisions.push_back(mc_rbdyn::Collision("panda_link3", "hand", i, s, d));
+    _commonSelfCollisions.push_back({"panda_link0", "hand", i, s, d});
+    _commonSelfCollisions.push_back({"panda_link1", "hand", i, s, d});
+    _commonSelfCollisions.push_back({"panda_link2", "hand", i, s, d});
+    _commonSelfCollisions.push_back({"panda_link3", "hand", i, s, d});
   }
 
   _commonSelfCollisions = _minimalSelfCollisions;

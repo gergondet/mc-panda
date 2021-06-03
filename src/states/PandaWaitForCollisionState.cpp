@@ -4,7 +4,11 @@
 
 #include <devices/Robot.h>
 
-#include <spdlog/fmt/bundled/ranges.h>
+#ifndef SPDLOG_FMT_EXTERNAL
+#  include <spdlog/fmt/bundled/ranges.h>
+#else
+#  include <fmt/ranges.h>
+#endif
 
 namespace mc_panda
 {
