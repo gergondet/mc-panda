@@ -53,7 +53,8 @@ bool PandaWaitForCollisionState::run(mc_control::fsm::Controller & ctl_)
     if(fabs(state.tau_ext_hat_filtered[i]) > joint_contact_thresholds_[i])
     {
       mc_rtc::log::info("[{}] Detected a joint-space collision for joint {}, value: {}, threshold: {}", name(),
-                        robot.module().ref_joint_order()[i], state.joint_contact[i], joint_contact_thresholds_[i]);
+                        robot.module().ref_joint_order()[i], state.tau_ext_hat_filtered[i],
+                        joint_contact_thresholds_[i]);
       output("OK");
       return true;
     }
@@ -64,7 +65,7 @@ bool PandaWaitForCollisionState::run(mc_control::fsm::Controller & ctl_)
     {
       std::array<char, 6> idxToCartesian{'x', 'y', 'z', 'R', 'P', 'Y'};
       mc_rtc::log::info("[{}] Detected a cartesian-space collision for axis {}, value: {}, threshold: {}", name(),
-                        idxToCartesian[i], state.cartesian_contact[i], cartesian_contact_thresholds_[i]);
+                        idxToCartesian[i], state.K_F_ext_hat_K[i], cartesian_contact_thresholds_[i]);
       output("OK");
       return true;
     }
